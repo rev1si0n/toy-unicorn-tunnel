@@ -1,0 +1,13 @@
+*.py[co]
+*.sqlite3
+__pycache__
+.idea
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+pip-log.txt
