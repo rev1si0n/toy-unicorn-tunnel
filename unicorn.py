@@ -63,6 +63,10 @@ class BaseProtocol(asyncio.Protocol, asyncio.DatagramProtocol):
             pass
 
     def request(self, data):
+        # minimum request data length is 8
+        # addr type is domain and lenth is 1
+        if len(data) < 0x08: return (-1,) * 5
+        
         sign, _c, _at, _al = struct.unpack("!HBBB", data[:5])
         if sign == 0x504b and _at \
             in (self.ADDR_DOMAIN, self.ADDR_IPV4, self.ADDR_IPV6):
