@@ -27,7 +27,7 @@ class Cryptor:
 
     def new(self):
         return Cryptor()
-    
+
     def enc(self, data):
         return data
 
@@ -36,7 +36,7 @@ class Cryptor:
 
 
 class RC4Cryptor(Cryptor):
-
+    # 这只是一个示例, 请自行实现
     def __init__(self, key):
         if not isinstance(key, bytes):
             key = key.encode('utf-8')

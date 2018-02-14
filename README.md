@@ -3,7 +3,21 @@
 
 ![](svg/unicorn.svg)
 
-基于asyncio，最终代码只有约250行，应该算是挺小的了，但是完整的实现了UDP/TCP的中继代理并且支持IPV6代理。使用了基于SOCKS5的自定义传输协议，支持 服务端<->客户端 的数据传输加密。目前实现了代理服务器端程序，以及一个基于此代理协议实现的SOCKS5客户端程序（暂未实现UDP）。后续会继续实现其他功能。
+基于asyncio，最终代码只有约250行，应该算是挺小的了，但是完整的实现了UDP/TCP的中继代理并且支持IPV6代理。使用了基于SOCKS5的自定义传输协议，支持 服务端<->客户端 的数据传输加密。目前实现了代理服务器端程序，以及一个基于此代理协议实现的SOCKS5客户端程序（客户端暂未实现UDP转发）。后续会继续实现其他功能。
+
+
+### 简易使用方法
+> 服务器端 `unicorn.py`
+```bash
+# 参数请用 `:` 分割, 分别是监听地址:监听端口:密码
+$> python3 unicorn.py 0.0.0.0:2365:MY_PASSWD
+```
+> 客户端 `u2socks5.py`
+```bash
+# 参数分为两串, 第一串表示本地SOCKS5监听的地址
+# 第二串表示中继服务器的地址:监听端口:密码
+$> python3 u2socks5.py 127.0.0.1:1080 12.12.12.12:2365:SERVER_PASSWD
+```
 
 ### 依赖 / 平台
 可以正常运行于安装了 `Python 3.4 +` 版本的Windows/Linux。如果无需传输加密的话，无依赖任何第三方包。默认依赖 pycrypto。
@@ -34,51 +48,3 @@
 
 ### 响应
 以后写...
-
-
-### 使用方法
-方法比较繁琐，没有添加命令行处理，所以现需要自己修改源码中的部分来使用。
-
-* 服务端
-
-```python
-# 本部分代码位于 unicorn.py 最底部
-
-# 是否需要加密，现使用了无nonce的RC4加解密，如果不需要加密
-# 请把 RC4Cryptor('password') 替换为 Cryptor()
-cryptor = RC4Cryptor('password')
-loop = asyncio.get_event_loop()
-
-# 绑定的服务地址及端口
-server = loop.run_until_complete(loop.create_server(
-    functools.partial(Unicorn, loop, cryptor),
-    host='0.0.0.0',
-    port=1240
-))
-```
-
-* SOCKS5客户端
-
-```python
-# 本部分代码位于 u2socks5.py 最底部
-
-# 同上服务端配置，加解密需要与服务端配置统一
-cryptor = RC4Cryptor('password')
-loop = asyncio.get_event_loop()
-
-server = loop.run_until_complete(loop.create_server(
-    functools.partial(SOCKS5, loop, cryptor),
-    host='0.0.0.0',
-    port=1242
-))
-```
-同时，还有这段代码
-```python
-transport, u = yield from asyncio.wait_for(
-    self.loop.create_connection(
-        TcpRelay,
-        host="127.0.0.1", # 请改成服务器端地址
-        port=1240 # 请改成服务器端端口
-    ),
-15)
-```

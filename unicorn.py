@@ -66,7 +66,7 @@ class BaseProtocol(asyncio.Protocol, asyncio.DatagramProtocol):
         # minimum request data length is 8
         # addr type is domain and lenth is 1
         if len(data) < 0x08: return (-1,) * 5
-        
+
         sign, _c, _at, _al = struct.unpack("!HBBB", data[:5])
         if sign == 0x504b and _at \
             in (self.ADDR_DOMAIN, self.ADDR_IPV4, self.ADDR_IPV6):
@@ -292,6 +292,7 @@ class Unicorn(BaseProtocol):
 
 
 if __name__ == "__main__":
+    import sys
     from cryptor import Cryptor, RC4Cryptor
     try:
         import uvloop
@@ -299,13 +300,22 @@ if __name__ == "__main__":
         asyncio.set_event_loop(loop)
     except ImportError:
         pass
+    try:
+        if len(sys.argv) != 2:
+            raise Exception("missing arguments.")
 
-    cryptor = RC4Cryptor('password')
+        host, port, passwd = sys.argv[1].split(":")
+    except Exception as err:
+        print (str(err))
+        print ("example argument line: 127.0.0.1:3698:mypasswd")
+        exit(1)
+
+    cryptor = RC4Cryptor(passwd)
     loop = asyncio.get_event_loop()
     server = loop.run_until_complete(loop.create_server(
         functools.partial(Unicorn, loop, cryptor),
-        host='0.0.0.0',
-        port=1240
+        host=host,
+        port=int(port)
     ))
 
     try:

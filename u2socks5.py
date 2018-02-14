@@ -36,11 +36,12 @@ class SOCKS5(BaseProtocol):
     ATYPE_IPV4 = 1
     ATYPE_IPV6 = 4
 
-    def __init__(self, loop, cryptor):
+    def __init__(self, loop, cryptor, server):
 
         self.loop = loop
         self.transport = None
         self.cryptor = cryptor.new()
+        self.server = server
         self._tcp_tunnel = None
         self._status = self.STAGE_CONN_MADE
 
@@ -114,8 +115,8 @@ class SOCKS5(BaseProtocol):
             transport, u = yield from asyncio.wait_for(
                 self.loop.create_connection(
                     TcpRelay,
-                    host="127.0.0.1",
-                    port=1240
+                    host=self.server['host'],
+                    port=self.server['port']
                 ),
             15)
             self._status = self.STAGE_TUNNEL_STREAMING
@@ -128,14 +129,25 @@ class SOCKS5(BaseProtocol):
 
 
 if __name__ == "__main__":
+    import sys
     from cryptor import Cryptor, RC4Cryptor
+    try:
+        if len(sys.argv) != 3:
+            raise Exception("missing arguments.")
 
-    cryptor = RC4Cryptor('password')
+        Lhost, Lport = sys.argv[1].split(":")
+        Rhost, Rport, Rpasswd = sys.argv[2].split(":")
+    except Exception as err:
+        print (str(err))
+        print ("example argument line: local_address:local_port server_address:server_port:remote_passwd")
+        exit(1)
+
+    cryptor = RC4Cryptor(Rpasswd)
     loop = asyncio.get_event_loop()
     server = loop.run_until_complete(loop.create_server(
-        functools.partial(SOCKS5, loop, cryptor),
-        host='0.0.0.0',
-        port=1242
+        functools.partial(SOCKS5, loop, cryptor, {'host': Rhost, 'port': Rport}),
+        host=Lhost,
+        port=Lport
     ))
 
     try:
